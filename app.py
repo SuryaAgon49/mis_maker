@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import pandas as pd
 import os
@@ -12,42 +11,81 @@ from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, 
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
-from jinja2 import Template
+from collections import defaultdict
+import uuid
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = '99eca62134091c78614e29a7030ebacf198af33e84cd8dcbf7104f8043354835'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///company_database.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'your-secret-key-here'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-db = SQLAlchemy(app)
-
 # Fixed Admin Credentials
 ADMIN_USERNAME = 'admin'
 ADMIN_PASSWORD = 'admin123'
 
-# Database Model - Redesigned for Company Data
-class CompanyData(db.Model):
-    __tablename__ = 'company_data'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False)
-    week = db.Column(db.String(20), nullable=False)
-    company_name = db.Column(db.String(200), nullable=False)
-    contact_number = db.Column(db.String(50), nullable=False)
-    designated_person_name = db.Column(db.String(100), nullable=True)  # Can be blank
-    designation = db.Column(db.String(100), nullable=True)  # Position
-    address = db.Column(db.Text, nullable=False)
-    remarks = db.Column(db.Text, nullable=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+# In-memory data storage
+DATA_FILE = 'company_data.json'
+company_data = []
+
+# Data persistence functions
+def load_data():
+    """Load data from JSON file"""
+    global company_data
+    try:
+        if os.path.exists(DATA_FILE):
+            with open(DATA_FILE, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Convert date strings back to datetime objects for processing
+                for item in data:
+                    if item.get('date'):
+                        item['date'] = datetime.strptime(item['date'], '%Y-%m-%d').date()
+                    if item.get('timestamp'):
+                        item['timestamp'] = datetime.fromisoformat(item['timestamp'])
+                    else:
+                        item['timestamp'] = datetime.utcnow()
+                company_data = data
+    except Exception as e:
+        print(f"Error loading data: {e}")
+        company_data = []
+
+def save_data():
+    """Save data to JSON file"""
+    try:
+        # Convert datetime objects to strings for JSON serialization
+        data_to_save = []
+        for item in company_data:
+            item_copy = item.copy()
+            if item_copy.get('date') and hasattr(item_copy['date'], 'isoformat'):
+                item_copy['date'] = item_copy['date'].isoformat()
+            if item_copy.get('timestamp') and hasattr(item_copy['timestamp'], 'isoformat'):
+                item_copy['timestamp'] = item_copy['timestamp'].isoformat()
+            data_to_save.append(item_copy)
+        
+        with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(data_to_save, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Error saving data: {e}")
+
+# Company Data Class (replacing SQLAlchemy model)
+class CompanyDataModel:
+    def __init__(self, **kwargs):
+        self.id = kwargs.get('id', str(uuid.uuid4()))
+        self.date = kwargs.get('date', datetime.now().date())
+        self.week = kwargs.get('week', get_week_number(self.date))
+        self.company_name = kwargs.get('company_name', '')
+        self.contact_number = kwargs.get('contact_number', '')
+        self.designated_person_name = kwargs.get('designated_person_name', '')
+        self.designation = kwargs.get('designation', '')
+        self.address = kwargs.get('address', '')
+        self.remarks = kwargs.get('remarks', '')
+        self.timestamp = kwargs.get('timestamp', datetime.utcnow())
     
     def to_dict(self):
         return {
             'id': self.id,
-            'date': self.date.isoformat() if self.date else None,
+            'date': self.date.isoformat() if hasattr(self.date, 'isoformat') else str(self.date),
             'week': self.week,
             'company_name': self.company_name,
             'contact_number': self.contact_number,
@@ -55,17 +93,119 @@ class CompanyData(db.Model):
             'designation': self.designation,
             'address': self.address,
             'remarks': self.remarks,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None
+            'timestamp': self.timestamp.isoformat() if hasattr(self.timestamp, 'isoformat') else str(self.timestamp)
         }
+
+# Data access functions (replacing SQLAlchemy queries)
+def get_all_companies():
+    """Get all companies"""
+    return company_data
+
+def get_companies_by_week(week):
+    """Get companies by week"""
+    return [item for item in company_data if item.get('week') == week]
+
+def get_companies_count():
+    """Get total companies count"""
+    return len(company_data)
+
+def get_companies_with_contacts_count():
+    """Get count of companies with designated person"""
+    return len([item for item in company_data if item.get('designated_person_name', '').strip()])
+
+def get_current_week_count():
+    """Get current week entries count"""
+    current_week = get_current_week()
+    return len([item for item in company_data if item.get('week') == current_week])
+
+def get_weekly_data():
+    """Get weekly trend data"""
+    weekly_counts = defaultdict(int)
+    for item in company_data:
+        weekly_counts[item.get('week', '')] += 1
+    return [(week, count) for week, count in sorted(weekly_counts.items())]
+
+def get_designation_data():
+    """Get designation distribution data"""
+    designation_counts = defaultdict(int)
+    for item in company_data:
+        designation = item.get('designation', '').strip()
+        if designation:
+            designation_counts[designation] += 1
+    return [(designation, count) for designation, count in designation_counts.items()]
+
+def get_recent_companies(limit=5):
+    """Get recent companies"""
+    sorted_data = sorted(company_data, key=lambda x: x.get('timestamp', datetime.min), reverse=True)
+    return sorted_data[:limit]
+
+def get_unique_weeks():
+    """Get unique weeks"""
+    weeks = set()
+    for item in company_data:
+        if item.get('week'):
+            weeks.add(item['week'])
+    return sorted(list(weeks), reverse=True)
+
+def search_companies(search_term, page=1, per_page=20):
+    """Search companies with pagination"""
+    search_term = search_term.lower()
+    filtered_data = []
+    
+    for item in company_data:
+        if (search_term in item.get('company_name', '').lower() or
+            search_term in item.get('designated_person_name', '').lower() or
+            search_term in item.get('contact_number', '').lower()):
+            filtered_data.append(item)
+    
+    # Sort by timestamp descending
+    filtered_data.sort(key=lambda x: x.get('timestamp', datetime.min), reverse=True)
+    
+    # Pagination
+    start = (page - 1) * per_page
+    end = start + per_page
+    
+    return {
+        'items': filtered_data[start:end],
+        'total': len(filtered_data),
+        'page': page,
+        'per_page': per_page,
+        'pages': (len(filtered_data) + per_page - 1) // per_page,
+        'has_prev': page > 1,
+        'has_next': page * per_page < len(filtered_data),
+        'prev_num': page - 1 if page > 1 else None,
+        'next_num': page + 1 if page * per_page < len(filtered_data) else None
+    }
+
+def add_company(data_dict):
+    """Add new company"""
+    global company_data
+    
+    # Ensure date is proper format
+    if isinstance(data_dict.get('date'), str):
+        try:
+            data_dict['date'] = datetime.strptime(data_dict['date'], '%Y-%m-%d').date()
+        except:
+            data_dict['date'] = datetime.now().date()
+    
+    # Generate ID and timestamp
+    data_dict['id'] = str(uuid.uuid4())
+    data_dict['timestamp'] = datetime.utcnow()
+    data_dict['week'] = get_week_number(data_dict['date'])
+    
+    company_data.append(data_dict)
+    save_data()
 
 # Helper Functions
 def get_week_number(date):
     """Get week number in format YYYY-W##"""
+    if isinstance(date, str):
+        date = datetime.strptime(date, '%Y-%m-%d').date()
     return f"{date.year}-W{date.isocalendar()[1]:02d}"
 
 def get_current_week():
     """Get current week string"""
-    return get_week_number(datetime.now())
+    return get_week_number(datetime.now().date())
 
 def parse_excel_file(file_path):
     """Parse Excel file and return data"""
@@ -162,7 +302,7 @@ def create_pdf_report(data, week_filter=None):
     
     # Summary statistics
     total_companies = len(data)
-    companies_with_contacts = len([d for d in data if d.designated_person_name])
+    companies_with_contacts = len([d for d in data if d.get('designated_person_name', '').strip()])
     
     summary_text = f"<b>Summary:</b><br/>Total Companies: {total_companies}<br/>Companies with Designated Contacts: {companies_with_contacts}"
     story.append(Paragraph(summary_text, styles['Normal']))
@@ -175,14 +315,20 @@ def create_pdf_report(data, week_filter=None):
         
         # Add data rows
         for entry in data:
+            date_str = entry.get('date', '')
+            if hasattr(date_str, 'strftime'):
+                date_str = date_str.strftime('%Y-%m-%d')
+            elif isinstance(date_str, str) and len(date_str) > 10:
+                date_str = date_str[:10]
+            
             row = [
-                entry.date.strftime('%Y-%m-%d'),
-                entry.company_name[:20] + '...' if len(entry.company_name) > 20 else entry.company_name,
-                entry.contact_number,
-                (entry.designated_person_name or '')[:15] + '...' if entry.designated_person_name and len(entry.designated_person_name) > 15 else (entry.designated_person_name or ''),
-                (entry.designation or '')[:15] + '...' if entry.designation and len(entry.designation) > 15 else (entry.designation or ''),
-                (entry.address or '')[:25] + '...' if entry.address and len(entry.address) > 25 else (entry.address or ''),
-                (entry.remarks or '')[:20] + '...' if entry.remarks and len(entry.remarks) > 20 else (entry.remarks or '')
+                str(date_str),
+                (entry.get('company_name', '')[:20] + '...') if len(entry.get('company_name', '')) > 20 else entry.get('company_name', ''),
+                entry.get('contact_number', ''),
+                (entry.get('designated_person_name', '')[:15] + '...') if len(entry.get('designated_person_name', '')) > 15 else entry.get('designated_person_name', ''),
+                (entry.get('designation', '')[:15] + '...') if len(entry.get('designation', '')) > 15 else entry.get('designation', ''),
+                (entry.get('address', '')[:25] + '...') if len(entry.get('address', '')) > 25 else entry.get('address', ''),
+                (entry.get('remarks', '')[:20] + '...') if len(entry.get('remarks', '')) > 20 else entry.get('remarks', '')
             ]
             table_data.append(row)
         
@@ -248,25 +394,14 @@ def dashboard():
         return redirect(url_for('login'))
     
     # Get summary statistics
-    total_companies = CompanyData.query.count()
-    companies_with_contacts = CompanyData.query.filter(CompanyData.designated_person_name != '').filter(CompanyData.designated_person_name.isnot(None)).count()
-    current_week_entries = CompanyData.query.filter_by(week=get_current_week()).count()
+    total_companies = get_companies_count()
+    companies_with_contacts = get_companies_with_contacts_count()
+    current_week_entries = get_current_week_count()
     
     # Get data for charts
-    # Weekly trend data
-    weekly_data = db.session.query(
-        CompanyData.week,
-        db.func.count(CompanyData.id).label('count')
-    ).group_by(CompanyData.week).order_by(CompanyData.week).all()
-    
-    # Companies by designation
-    designation_data = db.session.query(
-        CompanyData.designation,
-        db.func.count(CompanyData.id).label('count')
-    ).filter(CompanyData.designation != '').filter(CompanyData.designation.isnot(None)).group_by(CompanyData.designation).all()
-    
-    # Recent companies
-    recent_companies = CompanyData.query.order_by(CompanyData.timestamp.desc()).limit(5).all()
+    weekly_data = get_weekly_data()
+    designation_data = get_designation_data()
+    recent_companies = get_recent_companies()
     
     return render_template('dashboard.html',
                          total_companies=total_companies,
@@ -307,25 +442,22 @@ def data_entry():
                         else:
                             date_obj = row.get('date', datetime.now().date())
                         
-                        week_str = get_week_number(date_obj)
+                        entry_data = {
+                            'date': date_obj,
+                            'company_name': str(row.get('company_name', '')).strip(),
+                            'contact_number': str(row.get('contact_number', '')).strip(),
+                            'designated_person_name': str(row.get('designated_person_name', '')).strip(),
+                            'designation': str(row.get('designation', '')).strip(),
+                            'address': str(row.get('address', '')).strip(),
+                            'remarks': str(row.get('remarks', '')).strip()
+                        }
                         
-                        entry = CompanyData(
-                            date=date_obj,
-                            week=week_str,
-                            company_name=row.get('company_name', '').strip(),
-                            contact_number=row.get('contact_number', '').strip(),
-                            designated_person_name=row.get('designated_person_name', '').strip(),
-                            designation=row.get('designation', '').strip(),
-                            address=row.get('address', '').strip(),
-                            remarks=row.get('remarks', '').strip()
-                        )
-                        db.session.add(entry)
+                        add_company(entry_data)
                         added_count += 1
                     except Exception as e:
                         print(f"Error adding row: {e}")
                         continue
                 
-                db.session.commit()
                 flash(f'Successfully added {added_count} company entries from Excel!', 'success')
                 
                 # Clean up uploaded file
@@ -339,21 +471,18 @@ def data_entry():
             try:
                 date_str = request.form['date']
                 date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
-                week_str = get_week_number(date_obj)
                 
-                entry = CompanyData(
-                    date=date_obj,
-                    week=week_str,
-                    company_name=request.form['company_name'].strip(),
-                    contact_number=request.form['contact_number'].strip(),
-                    designated_person_name=request.form.get('designated_person_name', '').strip(),
-                    designation=request.form.get('designation', '').strip(),
-                    address=request.form['address'].strip(),
-                    remarks=request.form.get('remarks', '').strip()
-                )
+                entry_data = {
+                    'date': date_obj,
+                    'company_name': request.form['company_name'].strip(),
+                    'contact_number': request.form['contact_number'].strip(),
+                    'designated_person_name': request.form.get('designated_person_name', '').strip(),
+                    'designation': request.form.get('designation', '').strip(),
+                    'address': request.form['address'].strip(),
+                    'remarks': request.form.get('remarks', '').strip()
+                }
                 
-                db.session.add(entry)
-                db.session.commit()
+                add_company(entry_data)
                 flash('Company entry added successfully!', 'success')
             except Exception as e:
                 flash(f'Error adding entry: {e}', 'error')
@@ -361,7 +490,7 @@ def data_entry():
         return redirect(url_for('data_entry'))
     
     # Get recent entries for display
-    recent_entries = CompanyData.query.order_by(CompanyData.timestamp.desc()).limit(10).all()
+    recent_entries = get_recent_companies(10)
     return render_template('data_entry.html', recent_entries=recent_entries)
 
 @app.route('/export')
@@ -370,8 +499,7 @@ def export():
         return redirect(url_for('login'))
     
     # Get available weeks
-    weeks = db.session.query(CompanyData.week).distinct().order_by(CompanyData.week.desc()).all()
-    weeks = [w[0] for w in weeks]
+    weeks = get_unique_weeks()
     
     return render_template('export.html', weeks=weeks)
 
@@ -383,12 +511,14 @@ def export_data():
     week = request.args.get('week')
     format_type = request.args.get('format', 'excel')
     
-    # Build query
-    query = CompanyData.query
+    # Get data
     if week and week != 'all':
-        query = query.filter_by(week=week)
+        data = get_companies_by_week(week)
+    else:
+        data = get_all_companies()
     
-    data = query.order_by(CompanyData.date.desc()).all()
+    # Sort by date descending
+    data = sorted(data, key=lambda x: x.get('timestamp', datetime.min), reverse=True)
     
     if format_type == 'excel':
         # Create Excel file
@@ -412,14 +542,20 @@ def export_data():
         
         # Data
         for row, entry in enumerate(data, 1):
-            worksheet.write(row, 0, entry.date.strftime('%Y-%m-%d'))
-            worksheet.write(row, 1, entry.week)
-            worksheet.write(row, 2, entry.company_name)
-            worksheet.write(row, 3, entry.contact_number)
-            worksheet.write(row, 4, entry.designated_person_name or '')
-            worksheet.write(row, 5, entry.designation or '')
-            worksheet.write(row, 6, entry.address or '')
-            worksheet.write(row, 7, entry.remarks or '')
+            date_str = entry.get('date', '')
+            if hasattr(date_str, 'strftime'):
+                date_str = date_str.strftime('%Y-%m-%d')
+            elif isinstance(date_str, str) and len(date_str) > 10:
+                date_str = date_str[:10]
+            
+            worksheet.write(row, 0, str(date_str))
+            worksheet.write(row, 1, entry.get('week', ''))
+            worksheet.write(row, 2, entry.get('company_name', ''))
+            worksheet.write(row, 3, entry.get('contact_number', ''))
+            worksheet.write(row, 4, entry.get('designated_person_name', ''))
+            worksheet.write(row, 5, entry.get('designation', ''))
+            worksheet.write(row, 6, entry.get('address', ''))
+            worksheet.write(row, 7, entry.get('remarks', ''))
         
         # Auto-adjust column widths
         column_widths = [12, 12, 25, 15, 20, 15, 30, 25]
@@ -433,7 +569,7 @@ def export_data():
         return send_file(output, as_attachment=True, download_name=filename, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     
     elif format_type == 'pdf':
-        # Create PDF report using ReportLab
+        # Create PDF report
         pdf_buffer = create_pdf_report(data, week)
         filename = f"company_report_{week or 'all'}_{datetime.now().strftime('%Y%m%d')}.pdf"
         return send_file(pdf_buffer, as_attachment=True, download_name=filename, mimetype='application/pdf')
@@ -446,32 +582,22 @@ def chart_data():
     chart_type = request.args.get('type')
     
     if chart_type == 'weekly_trend':
-        data = db.session.query(
-            CompanyData.week,
-            db.func.count(CompanyData.id).label('count')
-        ).group_by(CompanyData.week).order_by(CompanyData.week).all()
-        
+        data = get_weekly_data()
         return jsonify({
-            'labels': [d.week for d in data],
-            'data': [d.count for d in data]
+            'labels': [d[0] for d in data],
+            'data': [d[1] for d in data]
         })
     
     elif chart_type == 'designation_distribution':
-        data = db.session.query(
-            CompanyData.designation,
-            db.func.count(CompanyData.id).label('count')
-        ).filter(CompanyData.designation != '').filter(CompanyData.designation.isnot(None)).group_by(CompanyData.designation).all()
-        
+        data = get_designation_data()
         return jsonify({
-            'labels': [d.designation for d in data],
-            'data': [d.count for d in data]
+            'labels': [d[0] for d in data],
+            'data': [d[1] for d in data]
         })
     
     elif chart_type == 'contact_status':
-        with_contact = CompanyData.query.filter(CompanyData.designated_person_name != '').filter(CompanyData.designated_person_name.isnot(None)).count()
-        without_contact = CompanyData.query.filter(
-            db.or_(CompanyData.designated_person_name == '', CompanyData.designated_person_name.is_(None))
-        ).count()
+        with_contact = get_companies_with_contacts_count()
+        without_contact = get_companies_count() - with_contact
         
         return jsonify({
             'labels': ['With Contact Person', 'Without Contact Person'],
@@ -487,14 +613,27 @@ def preview_data():
     
     week = request.args.get('week')
     
-    # Build query
-    query = CompanyData.query
+    # Get data
     if week and week != 'all':
-        query = query.filter_by(week=week)
+        data = get_companies_by_week(week)
+    else:
+        data = get_all_companies()
     
-    data = query.order_by(CompanyData.date.desc()).limit(50).all()
+    # Sort and limit
+    data = sorted(data, key=lambda x: x.get('timestamp', datetime.min), reverse=True)[:50]
     
-    return jsonify([entry.to_dict() for entry in data])
+    # Convert to dict format for JSON response
+    result = []
+    for entry in data:
+        entry_dict = entry.copy()
+        # Ensure proper date format for JSON
+        if entry_dict.get('date') and hasattr(entry_dict['date'], 'isoformat'):
+            entry_dict['date'] = entry_dict['date'].isoformat()
+        if entry_dict.get('timestamp') and hasattr(entry_dict['timestamp'], 'isoformat'):
+            entry_dict['timestamp'] = entry_dict['timestamp'].isoformat()
+        result.append(entry_dict)
+    
+    return jsonify(result)
 
 @app.route('/companies')
 def companies():
@@ -504,27 +643,40 @@ def companies():
     page = request.args.get('page', 1, type=int)
     search = request.args.get('search', '')
     
-    query = CompanyData.query
+    # Get paginated results
+    companies_data = search_companies(search, page, 20)
     
-    if search:
-        query = query.filter(
-            db.or_(
-                CompanyData.company_name.contains(search),
-                CompanyData.designated_person_name.contains(search),
-                CompanyData.contact_number.contains(search)
-            )
-        )
+    # Create a simple object to mimic SQLAlchemy pagination
+    class PaginationObject:
+        def __init__(self, data):
+            self.items = data['items']
+            self.total = data['total']
+            self.page = data['page']
+            self.per_page = data['per_page']
+            self.pages = data['pages']
+            self.has_prev = data['has_prev']
+            self.has_next = data['has_next']
+            self.prev_num = data['prev_num']
+            self.next_num = data['next_num']
+        
+        def iter_pages(self):
+            """Generator for pagination numbers"""
+            for num in range(1, self.pages + 1):
+                yield num
     
-    companies = query.order_by(CompanyData.timestamp.desc()).paginate(
-        page=page, per_page=20, error_out=False
-    )
+    companies = PaginationObject(companies_data)
     
     return render_template('companies.html', companies=companies, search=search)
 
+# Initialize data on startup
+@app.before_first_request
+def initialize():
+    load_data()
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
+    load_data()
     print("Company Directory System starting...")
     print("Login credentials: admin / admin123")
+    print("Database-free version using JSON file storage")
     print("New database structure with Company Name, Contact Number, Designated Person Name, Designation, Address, and Remarks")
     app.run(debug=True)

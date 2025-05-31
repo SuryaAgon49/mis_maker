@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Entry - Company Directory</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Reset and base styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+}
+
+/* Header styles */
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+nav {
+    margin-top: 1rem;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+    display: inline-block;
+}
+
+nav a:hover {
+    background-color: rgba(255,255,255,0.2);
+}
+
+/* Main content */
+main {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+/* Flash messages */
+.flash-messages div {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    border-left: 4px solid;
+}
+
+.flash-messages .success {
+    background-color: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.flash-messages .error {
+    background-color: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.flash-messages .info {
+    background-color: #d1ecf1;
+    border-color: #17a2b8;
+    color: #0c5460;
+}
+
+/* Section styles */
+section {
+    background: white;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+section h2 {
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+
+/* Form styles */
+form {
+    display: grid;
+    gap: 1.5rem;
+}
+
+form div {
+    display: flex;
+    flex-direction: column;
+}
+
+label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="file"],
+textarea {
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+input[type="text"]:focus,
+input[type="date"]:focus,
+textarea:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+small {
+    color: #666;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Button styles */
+button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 1rem;
+}
+
+button[type="submit"] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+button[type="reset"] {
+    background-color: #6c757d;
+    color: white;
+}
+
+button[type="reset"]:hover {
+    background-color: #5a6268;
+}
+
+/* Button container */
+.button-container {
+    flex-direction: row !important;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+form div:last-child {
+    flex-direction: row;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Instructions list */
+ul {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+
+li {
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+/* File input styling */
+input[type="file"] {
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+input[type="file"]:hover {
+    background-color: #e9ecef;
+}
+
+/* Table styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+}
+
+td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+tr:hover {
+    background-color: #f8f9fa;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    header {
+        padding: 1rem;
+    }
+    
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    nav a {
+        display: block;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    
+    main {
+        margin: 1rem auto;
+        padding: 0 0.5rem;
+    }
+    
+    section {
+        padding: 1rem;
+    }
+    
+    table {
+        font-size: 0.875rem;
+    }
+    
+    th, td {
+        padding: 0.5rem;
+    }
+    
+    form div:last-child {
+        flex-direction: column;
+    }
+    
+    button {
+        margin-bottom: 0.5rem;
+        margin-right: 0;
+    }
+}
+
+/* Table responsive wrapper */
+.table-wrapper {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .table-wrapper {
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+}
+
+/* Enhanced form validation styles */
+input:invalid {
+    border-color: #dc3545;
+}
+
+input:valid {
+    border-color: #28a745;
+}
+
+/* Loading state for buttons */
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Improved spacing for form sections */
+.form-section {
+    border: 1px solid #e9ecef;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    background-color: #f8f9fa;
+}
+
+.form-section h3 {
+    margin-bottom: 1rem;
+    color: #495057;
+    font-size: 1.1rem;
+}
+    </style>
+</head>
+<body>
+    <div>
+        <header>
+            <h1>Company Data Entry</h1>
+            <nav>
+                <a href="{{ url_for('dashboard') }}">Dashboard</a> |
+                <a href="{{ url_for('data_entry') }}">Data Entry</a> |
+                <a href="{{ url_for('companies') }}">View Companies</a> |
+                <a href="{{ url_for('export') }}">Export</a> |
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </nav>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div>
+                            <strong>{{ category.title() }}:</strong> {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <section>
+                <h2>Manual Data Entry</h2>
+                <form method="POST">
+                    <div>
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" required>
+                    </div>
+
+                    <div>
+                        <label for="company_name">Company Name:</label>
+                        <input type="text" id="company_name" name="company_name" required maxlength="200">
+                    </div>
+
+                    <div>
+                        <label for="contact_number">Contact Number:</label>
+                        <input type="text" id="contact_number" name="contact_number" required maxlength="50">
+                    </div>
+
+                    <div>
+                        <label for="designated_person_name">Designated Person Name:</label>
+                        <input type="text" id="designated_person_name" name="designated_person_name" maxlength="100">
+                        <small>(Optional)</small>
+                    </div>
+
+                    <div>
+                        <label for="designation">Designation:</label>
+                        <input type="text" id="designation" name="designation" maxlength="100">
+                        <small>(Optional)</small>
+                    </div>
+
+                    <div>
+                        <label for="address">Address:</label>
+                        <textarea id="address" name="address" required rows="3" cols="50"></textarea>
+                    </div>
+
+                    <div>
+                        <label for="remarks">Remarks:</label>
+                        <textarea id="remarks" name="remarks" rows="3" cols="50"></textarea>
+                        <small>(Optional)</small>
+                    </div>
+
+                    <div>
+                        <button type="submit">Add Company Entry</button>
+                        <button type="reset">Clear Form</button>
+                    </div>
+                </form>
+            </section>
+
+            <section>
+                <h2>Bulk Upload from Excel</h2>
+                <p><strong>Instructions:</strong></p>
+                <ul>
+                    <li>Upload an Excel file (.xlsx or .xls)</li>
+                    <li>Supported column names: Company Name, Contact Number, Designated Person Name, Designation, Address, Remarks, Date</li>
+                    <li>Required columns: Company Name, Contact Number, Address</li>
+                    <li>Optional columns can be left blank</li>
+                </ul>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div>
+                        <label for="excel_file">Select Excel File:</label>
+                        <input type="file" id="excel_file" name="excel_file" accept=".xlsx,.xls" required>
+                    </div>
+                    <div>
+                        <button type="submit">Upload and Process</button>
+                    </div>
+                </form>
+            </section>
+
+            <section>
+                <h2>Recent Entries</h2>
+                {% if recent_entries %}
+                <table border="1">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Week</th>
+                            <th>Company Name</th>
+                            <th>Contact Number</th>
+                            <th>Contact Person</th>
+                            <th>Designation</th>
+                            <th>Address</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in recent_entries %}
+                        <tr>
+                            <td>{{ entry.date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ entry.week }}</td>
+                            <td>{{ entry.company_name }}</td>
+                            <td>{{ entry.contact_number }}</td>
+                            <td>{{ entry.designated_person_name or 'N/A' }}</td>
+                            <td>{{ entry.designation or 'N/A' }}</td>
+                            <td>{{ entry.address[:50] }}{% if entry.address|length > 50 %}...{% endif %}</td>
+                            <td>{{ entry.remarks[:30] if entry.remarks else 'N/A' }}{% if entry.remarks and entry.remarks|length > 30 %}...{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p>No entries found. Add your first company entry above.</p>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+</body>
+</html>

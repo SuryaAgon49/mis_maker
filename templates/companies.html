@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Companies - Company Directory System</title>
+    <style>
+        /* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f7fa;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header Styles */
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+header h1 {
+    font-size: 2rem;
+    font-weight: 300;
+    margin-bottom: 1rem;
+}
+
+nav {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
+nav a {
+    color: white;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+nav a:hover {
+    background-color: rgba(255,255,255,0.2);
+    transform: translateY(-2px);
+}
+
+/* Main Content */
+main {
+    flex: 1;
+    padding: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+main h2 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    font-weight: 400;
+}
+
+/* Search Form Styles */
+form {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    margin-bottom: 2rem;
+}
+
+form div {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+form label {
+    font-weight: 600;
+    color: #555;
+    min-width: 140px;
+}
+
+form input[type="text"] {
+    flex: 1;
+    min-width: 300px;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e1e8ed;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+form input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+form button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+form button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+form a {
+    color: #e74c3c;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+form a:hover {
+    background-color: rgba(231, 76, 60, 0.1);
+}
+
+/* Results Summary */
+main > div:nth-of-type(2) {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+main > div:nth-of-type(2) p {
+    color: #666;
+    font-size: 0.95rem;
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+}
+
+thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+thead th {
+    padding: 1rem 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+tbody tr {
+    border-bottom: 1px solid #e1e8ed;
+    transition: background-color 0.2s ease;
+}
+
+tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+tbody tr:last-child {
+    border-bottom: none;
+}
+
+tbody td {
+    padding: 1rem 0.75rem;
+    vertical-align: top;
+    font-size: 0.9rem;
+}
+
+tbody td:nth-child(3) {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+tbody td:nth-child(4) {
+    font-family: 'Courier New', monospace;
+    color: #27ae60;
+    font-weight: 500;
+}
+
+/* Pagination Styles */
+main > div:nth-of-type(3) {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    margin-bottom: 2rem;
+}
+
+main > div:nth-of-type(3) p:first-child {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+main > div:nth-of-type(3) a {
+    color: #667eea;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid #e1e8ed;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+main > div:nth-of-type(3) a:hover {
+    background-color: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+main > div:nth-of-type(3) strong {
+    background-color: #667eea;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+}
+
+main > div:nth-of-type(3) span {
+    padding: 0.5rem;
+    color: #999;
+}
+
+main > div:nth-of-type(3) small {
+    color: #666;
+    font-style: italic;
+}
+
+/* No Results Message */
+main > div:nth-of-type(4) {
+    background: white;
+    padding: 3rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+main > div:nth-of-type(4) p {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+main > div:nth-of-type(4) a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    display: inline-block;
+    transition: all 0.3s ease;
+}
+
+main > div:nth-of-type(4) a:hover {
+    background-color: #667eea;
+    color: white;
+}
+
+/* Quick Actions */
+main > div:last-of-type h3 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+main > div:last-of-type {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+    margin-bottom: 2rem;
+}
+
+main > div:last-of-type p a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+main > div:last-of-type p a:hover {
+    color: #764ba2;
+}
+
+/* Flash Messages */
+.flash-messages {
+    margin: 1rem 0;
+}
+
+.flash-messages > div {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 6px;
+    border-left: 4px solid;
+}
+
+.flash-messages .success {
+    background-color: #d4edda;
+    border-left-color: #28a745;
+    color: #155724;
+}
+
+.flash-messages .error {
+    background-color: #f8d7da;
+    border-left-color: #dc3545;
+    color: #721c24;
+}
+
+.flash-messages .info {
+    background-color: #d1ecf1;
+    border-left-color: #17a2b8;
+    color: #0c5460;
+}
+
+/* Footer */
+footer {
+    background-color: #2c3e50;
+    color: white;
+    text-align: center;
+    padding: 1.5rem;
+    margin-top: auto;
+}
+
+footer p {
+    font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    main {
+        padding: 1.5rem;
+    }
+    
+    table {
+        font-size: 0.85rem;
+    }
+    
+    thead th,
+    tbody td {
+        padding: 0.75rem 0.5rem;
+    }
+}
+
+@media (max-width: 768px) {
+    header {
+        padding: 1rem;
+    }
+    
+    header h1 {
+        font-size: 1.5rem;
+    }
+    
+    nav {
+        gap: 1rem;
+    }
+    
+    nav a {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.9rem;
+    }
+    
+    main {
+        padding: 1rem;
+    }
+    
+    form div {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    form label {
+        min-width: auto;
+    }
+    
+    form input[type="text"] {
+        min-width: auto;
+    }
+    
+    table {
+        overflow-x: auto;
+        display: block;
+        white-space: nowrap;
+    }
+    
+    thead,
+    tbody {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+    }
+    
+    main > div:nth-of-type(3) p:first-child {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    header h1 {
+        font-size: 1.3rem;
+    }
+    
+    nav {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    main h2 {
+        font-size: 1.5rem;
+    }
+    
+    form {
+        padding: 1rem;
+    }
+    
+    table {
+        font-size: 0.8rem;
+    }
+    
+    thead th,
+    tbody td {
+        padding: 0.5rem 0.3rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    body {
+        background: white;
+    }
+    
+    header,
+    footer,
+    form,
+    main > div:nth-of-type(3),
+    main > div:last-of-type {
+        display: none;
+    }
+    
+    table {
+        box-shadow: none;
+        border: 1px solid #333;
+    }
+    
+    thead {
+        background: #f0f0f0 !important;
+        color: #333 !important;
+    }
+}
+    </style>
+</head>
+<body>
+    <div>
+        <header>
+            <h1>Company Directory System</h1>
+            <nav>
+                <a href="{{ url_for('dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('data_entry') }}">Data Entry</a>
+                <a href="{{ url_for('companies') }}">Companies</a>
+                <a href="{{ url_for('export') }}">Export</a>
+                <a href="{{ url_for('logout') }}">Logout</a>
+            </nav>
+        </header>
+
+        <main>
+            <h2>Company Directory</h2>
+            
+            <!-- Search Form -->
+            <form method="GET" action="{{ url_for('companies') }}">
+                <div>
+                    <label for="search">Search Companies:</label>
+                    <input type="text" id="search" name="search" value="{{ search }}" 
+                           placeholder="Search by company name, contact person, or phone number">
+                    <button type="submit">Search</button>
+                    {% if search %}
+                        <a href="{{ url_for('companies') }}">Clear Search</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            <!-- Results Summary -->
+            <div>
+                <p>
+                    {% if search %}
+                        Search results for "{{ search }}" - 
+                    {% endif %}
+                    Showing {{ companies.items|length }} of {{ companies.total }} companies
+                    (Page {{ companies.page }} of {{ companies.pages }})
+                </p>
+            </div>
+
+            <!-- Companies Table -->
+            {% if companies.items %}
+                <table border="1" cellpadding="5" cellspacing="0" width="100%">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Week</th>
+                            <th>Company Name</th>
+                            <th>Contact Number</th>
+                            <th>Contact Person</th>
+                            <th>Designation</th>
+                            <th>Address</th>
+                            <th>Remarks</th>
+                            <th>Added On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for company in companies.items %}
+                            <tr>
+                                <td>{{ company.date.strftime('%Y-%m-%d') if company.date else 'N/A' }}</td>
+                                <td>{{ company.week }}</td>
+                                <td><strong>{{ company.company_name }}</strong></td>
+                                <td>{{ company.contact_number }}</td>
+                                <td>{{ company.designated_person_name or '-' }}</td>
+                                <td>{{ company.designation or '-' }}</td>
+                                <td>{{ company.address[:50] + '...' if company.address and company.address|length > 50 else (company.address or '-') }}</td>
+                                <td>{{ company.remarks[:30] + '...' if company.remarks and company.remarks|length > 30 else (company.remarks or '-') }}</td>
+                                <td>{{ company.timestamp.strftime('%Y-%m-%d %H:%M') if company.timestamp else 'N/A' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- Pagination -->
+                <div>
+                    <p>
+                        {% if companies.has_prev %}
+                            <a href="{{ url_for('companies', page=companies.prev_num, search=search) }}">&laquo; Previous</a>
+                        {% endif %}
+                        
+                        {% for page_num in companies.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != companies.page %}
+                                    <a href="{{ url_for('companies', page=page_num, search=search) }}">{{ page_num }}</a>
+                                {% else %}
+                                    <strong>{{ page_num }}</strong>
+                                {% endif %}
+                            {% else %}
+                                <span>...</span>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if companies.has_next %}
+                            <a href="{{ url_for('companies', page=companies.next_num, search=search) }}">Next &raquo;</a>
+                        {% endif %}
+                    </p>
+                    
+                    <p>
+                        <small>
+                            Showing entries {{ ((companies.page - 1) * companies.per_page) + 1 }} to 
+                            {{ ((companies.page - 1) * companies.per_page) + companies.items|length }} 
+                            of {{ companies.total }} total entries
+                        </small>
+                    </p>
+                </div>
+
+            {% else %}
+                <div>
+                    {% if search %}
+                        <p>No companies found matching your search criteria.</p>
+                        <p><a href="{{ url_for('companies') }}">View all companies</a></p>
+                    {% else %}
+                        <p>No companies have been added yet.</p>
+                        <p><a href="{{ url_for('data_entry') }}">Add your first company</a></p>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- Quick Actions -->
+            <div>
+                <h3>Quick Actions</h3>
+                <p>
+                    <a href="{{ url_for('data_entry') }}">Add New Company</a> |
+                    <a href="{{ url_for('export') }}">Export Data</a> |
+                    <a href="{{ url_for('dashboard') }}">Back to Dashboard</a>
+                </p>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div>
+                        {% for category, message in messages %}
+                            <div>
+                                <strong>{{ category.title() }}:</strong> {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Company Directory System | Logged in as: {{ session.username }}</p>
+        </footer>
+    </div>
+</body>
+</html>

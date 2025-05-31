@@ -360,6 +360,11 @@ def create_pdf_report(data, week_filter=None):
     buffer.seek(0)
     return buffer
 
+# Initialize data when app context is available
+def init_app():
+    """Initialize application data"""
+    load_data()
+
 # Routes
 @app.route('/')
 def index():
@@ -392,6 +397,10 @@ def logout():
 def dashboard():
     if 'logged_in' not in session:
         return redirect(url_for('login'))
+    
+    # Ensure data is loaded
+    if not company_data:
+        load_data()
     
     # Get summary statistics
     total_companies = get_companies_count()
@@ -668,15 +677,11 @@ def companies():
     
     return render_template('companies.html', companies=companies, search=search)
 
-# Initialize data on startup
-@app.before_first_request
-def initialize():
-    load_data()
-
 if __name__ == '__main__':
-    load_data()
+    # Initialize data on startup
+    init_app()
     print("Company Directory System starting...")
     print("Login credentials: admin / admin123")
     print("Database-free version using JSON file storage")
     print("New database structure with Company Name, Contact Number, Designated Person Name, Designation, Address, and Remarks")
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)

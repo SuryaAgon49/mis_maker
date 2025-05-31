@@ -15,7 +15,7 @@ from reportlab.lib.units import inch
 from jinja2 import Template
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'your-secret-key-here'
+app.config['SECRET_KEY'] = '99eca62134091c78614e29a7030ebacf198af33e84cd8dcbf7104f8043354835'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///company_database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
